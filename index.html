@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pré-Dimensionamento Estrutural</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 960px;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #1e40af;
+        }
+        .result-box {
+            background-color: #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center py-12 px-4">
+
+    <div class="container mx-auto space-y-8">
+        <div class="text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2">Pré-Dimensionamento de Estruturas</h1>
+            <p class="text-gray-600 text-lg">Use esta ferramenta para estimar as dimensões iniciais de lajes, vigas e pilares de concreto armado, conforme as diretrizes da apostila.</p>
+        </div>
+
+        <!-- Dados do Material Card -->
+        <div class="card p-8 space-y-6">
+            <h2 class="text-2xl font-bold text-gray-700">Dados do Material</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="fck">Resistência Característica do Concreto (fck) (MPa):</label>
+                    <input type="number" id="fck" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 25" min="20" step="1">
+                </div>
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="fyk">Resistência Característica do Aço (fyk) (MPa):</label>
+                    <input type="number" id="fyk" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 500" min="400" step="10">
+                </div>
+            </div>
+        </div>
+
+        <!-- Lajes Card -->
+        <div class="card p-8 space-y-6">
+            <h2 class="text-2xl font-bold text-gray-700">Lajes</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="lx-laje">Menor Vão (Lx) (m):</label>
+                    <input type="number" id="lx-laje" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 5.0" min="0.1" step="0.1">
+                </div>
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="tipo-laje">Tipo de Apoio:</label>
+                    <select id="tipo-laje" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="simplesmente-apoiada">Simplesmente Apoiada (h = Lx / 40)</option>
+                        <option value="continua-uma-direcao">Contínua em uma direção (h = Lx / 50)</option>
+                        <option value="continua-duas-direcoes">Contínua em duas direções (h = Lx / 60)</option>
+                        <option value="engastada">Engastada (h = Lx / 35)</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="calcularLaje()" class="btn-primary w-full md:w-auto">Calcular Laje</button>
+            <div id="resultado-laje" class="result-box hidden"></div>
+        </div>
+
+        <!-- Vigas Card -->
+        <div class="card p-8 space-y-6">
+            <h2 class="text-2xl font-bold text-gray-700">Vigas</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="l-viga">Vão (L) (m):</label>
+                    <input type="number" id="l-viga" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 6.0" min="0.1" step="0.1">
+                </div>
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="tipo-viga">Tipo de Apoio:</label>
+                    <select id="tipo-viga" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="simplesmente-apoiada">Simplesmente Apoiada (h = L/10 - L/12)</option>
+                        <option value="continua">Contínua (h = L/15)</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="calcularViga()" class="btn-primary w-full md:w-auto">Calcular Viga</button>
+            <div id="resultado-viga" class="result-box hidden"></div>
+        </div>
+
+        <!-- Pilares Card -->
+        <div class="card p-8 space-y-6">
+            <h2 class="text-2xl font-bold text-gray-700">Pilares</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="lx-pilar">Menor Vão (Lx) (m):</label>
+                    <input type="number" id="lx-pilar" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 4.0" min="0.1" step="0.1" oninput="atualizarAreaTributaria()">
+                </div>
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="ly-pilar">Maior Vão (Ly) (m):</label>
+                    <input type="number" id="ly-pilar" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 6.0" min="0.1" step="0.1" oninput="atualizarAreaTributaria()">
+                </div>
+                <div class="input-group flex flex-col space-y-2 col-span-1 md:col-span-2">
+                    <label for="area-tributaria">Área de Influência Calculada (m²):</label>
+                    <input type="text" id="area-tributaria" class="rounded-lg p-2 border border-gray-300 bg-gray-200" readonly>
+                </div>
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="n-pavimentos">Número de Pavimentos:</label>
+                    <input type="number" id="n-pavimentos" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 3" min="1" step="1">
+                </div>
+            </div>
+            <button onclick="calcularPilar()" class="btn-primary w-full md:w-auto">Calcular Pilar</button>
+            <div id="resultado-pilar" class="result-box hidden"></div>
+        </div>
+        
+        <!-- Cálculo de Armaduras Card -->
+        <div class="card p-8 space-y-6">
+            <h2 class="text-2xl font-bold text-gray-700">Cálculo de Armaduras (Área de Aço - As)</h2>
+            <p class="text-sm text-gray-500">
+                Esta seção fornece uma estimativa da área de aço com base nas dimensões de concreto e nas resistências do material.
+                As fórmulas utilizadas são simplificadas para pré-dimensionamento.
+            </p>
+            
+            <!-- Laje - Armadura -->
+            <div class="space-y-4">
+                <h3 class="text-xl font-bold text-gray-600">Laje</h3>
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="h-laje-armadura">Altura da Laje (h) (cm):</label>
+                    <input type="number" id="h-laje-armadura" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 12" min="1" step="1">
+                </div>
+                <button onclick="calcularArmaduraLaje()" class="btn-primary w-full md:w-auto">Calcular Armadura da Laje</button>
+                <div id="resultado-armadura-laje" class="result-box hidden"></div>
+            </div>
+
+            <!-- Viga - Armadura -->
+            <div class="space-y-4">
+                <h3 class="text-xl font-bold text-gray-600">Viga</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="input-group flex flex-col space-y-2">
+                        <label for="b-viga-armadura">Largura da Viga (bw) (cm):</label>
+                        <input type="number" id="b-viga-armadura" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 20" min="1" step="1">
+                    </div>
+                    <div class="input-group flex flex-col space-y-2">
+                        <label for="h-viga-armadura">Altura da Viga (h) (cm):</label>
+                        <input type="number" id="h-viga-armadura" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 45" min="1" step="1">
+                    </div>
+                </div>
+                <button onclick="calcularArmaduraViga()" class="btn-primary w-full md:w-auto">Calcular Armadura da Viga</button>
+                <div id="resultado-armadura-viga" class="result-box hidden"></div>
+            </div>
+
+            <!-- Pilar - Armadura -->
+            <div class="space-y-4">
+                <h3 class="text-xl font-bold text-gray-600">Pilar</h3>
+                <div class="input-group flex flex-col space-y-2">
+                    <label for="ac-pilar-armadura">Área do Pilar (Ac) (cm²):</label>
+                    <input type="number" id="ac-pilar-armadura" class="rounded-lg p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: 400" min="1" step="1">
+                </div>
+                <button onclick="calcularArmaduraPilar()" class="btn-primary w-full md:w-auto">Calcular Armadura do Pilar</button>
+                <div id="resultado-armadura-pilar" class="result-box hidden"></div>
+            </div>
+        </div>
+
+        <div class="text-center text-sm text-gray-500 mt-8">
+            <p>Observação: Este é um pré-dimensionamento simplificado. As dimensões finais e detalhamento das armaduras devem ser determinados por um engenheiro estrutural, com base em cálculos detalhados e normas vigentes.</p>
+        </div>
+    </div>
+
+    <script>
+        // Função para calcular as dimensões da laje
+        function calcularLaje() {
+            const lx = parseFloat(document.getElementById('lx-laje').value);
+            const tipo = document.getElementById('tipo-laje').value;
+            const resultadoDiv = document.getElementById('resultado-laje');
+            resultadoDiv.classList.add('hidden');
+
+            if (isNaN(lx) || lx <= 0) {
+                resultadoDiv.innerHTML = `<span class="text-red-600">Por favor, insira um valor válido para o menor vão (Lx).</span>`;
+                resultadoDiv.classList.remove('hidden');
+                return;
+            }
+
+            let divisor = 0;
+            let altura = 0;
+
+            // Fatores baseados no tipo de apoio (extraídos do PDF)
+            switch (tipo) {
+                case 'simplesmente-apoiada':
+                    divisor = 40;
+                    break;
+                case 'continua-uma-direcao':
+                    divisor = 50;
+                    break;
+                case 'continua-duas-direcoes':
+                    divisor = 60;
+                    break;
+                case 'engastada':
+                    divisor = 35;
+                    break;
+            }
+
+            if (divisor > 0) {
+                altura = (lx * 100) / divisor; // Converter de m para cm
+            }
+
+            // Mínimos baseados no PDF (p. 15)
+            const hMin = 7; // cm, para lajes com sobrecarga
+            altura = Math.max(altura, hMin);
+            
+            resultadoDiv.innerHTML = `
+                <p>Altura da laje (h): <span class="text-blue-700">${altura.toFixed(2)} cm</span></p>
+            `;
+            resultadoDiv.classList.remove('hidden');
+        }
+
+        // Função para calcular as dimensões da viga
+        function calcularViga() {
+            const lViga = parseFloat(document.getElementById('l-viga').value);
+            const tipo = document.getElementById('tipo-viga').value;
+            const resultadoDiv = document.getElementById('resultado-viga');
+            resultadoDiv.classList.add('hidden');
+
+            if (isNaN(lViga) || lViga <= 0) {
+                resultadoDiv.innerHTML = `<span class="text-red-600">Por favor, insira um valor válido para o vão (L).</span>`;
+                resultadoDiv.classList.remove('hidden');
+                return;
+            }
+
+            let h_min = 0, h_max = 0;
+            const b_min = 20; // cm (assumindo mínimo de 20cm da NBR)
+
+            // Fatores baseados no tipo de apoio (extraídos do PDF, p. 25)
+            switch (tipo) {
+                case 'simplesmente-apoiada':
+                    h_min = (lViga / 12) * 100; // converter m para cm
+                    h_max = (lViga / 10) * 100; // converter m para cm
+                    break;
+                case 'continua':
+                    h_min = (lViga / 15) * 100; // converter m para cm
+                    h_max = h_min; // A apostila dá apenas uma diretriz para vigas contínuas
+                    break;
+            }
+            
+            const b = Math.max(h_min / 3, b_min);
+            
+            resultadoDiv.innerHTML = `
+                <p>Altura da viga (h): <span class="text-blue-700">${h_min.toFixed(2)} cm a ${h_max.toFixed(2)} cm</span></p>
+                <p>Largura da viga (bw): <span class="text-blue-700">${b.toFixed(2)} cm</span></p>
+            `;
+            resultadoDiv.classList.remove('hidden');
+        }
+
+        // Função para calcular e exibir a área de influência
+        function atualizarAreaTributaria() {
+            const lx = parseFloat(document.getElementById('lx-pilar').value);
+            const ly = parseFloat(document.getElementById('ly-pilar').value);
+            const areaInput = document.getElementById('area-tributaria');
+            
+            if (isNaN(lx) || isNaN(ly) || lx <= 0 || ly <= 0) {
+                areaInput.value = '';
+            } else {
+                const area = lx * ly;
+                areaInput.value = area.toFixed(2);
+            }
+        }
+        
+        // Função para calcular as dimensões do pilar
+        function calcularPilar() {
+            const areaTributaria = parseFloat(document.getElementById('area-tributaria').value);
+            const nPavimentos = parseInt(document.getElementById('n-pavimentos').value);
+            const resultadoDiv = document.getElementById('resultado-pilar');
+            resultadoDiv.classList.add('hidden');
+
+            if (isNaN(areaTributaria) || areaTributaria <= 0 || isNaN(nPavimentos) || nPavimentos <= 0) {
+                resultadoDiv.innerHTML = `<span class="text-red-600">Por favor, preencha a área de influência e o número de pavimentos com valores válidos.</span>`;
+                resultadoDiv.classList.remove('hidden');
+                return;
+            }
+            
+            // Fator de pré-dimensionamento k (aproximação baseada em regras gerais)
+            const k = 0.5; // kN/m² por pavimento (considerando 0.5 kN/m² por pavimento + 10-20% de peso próprio)
+            const N_d = areaTributaria * nPavimentos * k; // Carga de cálculo
+
+            // Área necessária do pilar (extraído do PDF, p. 35)
+            const areaPilarCm2 = areaTributaria * nPavimentos * 15; // Regra de bolso sugerida no PDF, p. 35 (15 cm²/m² de área de influência)
+
+            // Verificação de área mínima
+            const areaMinima = 360; // cm²
+            const areaFinal = Math.max(areaPilarCm2, areaMinima);
+
+            // Verificação de dimensão mínima
+            const dMin = 19; // cm
+            const lado = Math.sqrt(areaFinal);
+            
+            // Sugere dimensões quadradas
+            const ladoFinal = Math.max(lado, dMin);
+            
+            resultadoDiv.innerHTML = `
+                <p>Área do pilar (Ac): <span class="text-blue-700">${areaFinal.toFixed(2)} cm²</span></p>
+                <p>Dimensão sugerida (quadrada): <span class="text-blue-700">${ladoFinal.toFixed(2)} cm</span></p>
+            `;
+            resultadoDiv.classList.remove('hidden');
+        }
+
+        // Função para calcular a armadura da laje
+        function calcularArmaduraLaje() {
+            const h = parseFloat(document.getElementById('h-laje-armadura').value);
+            const fck = parseFloat(document.getElementById('fck').value);
+            const fyk = parseFloat(document.getElementById('fyk').value);
+            const resultadoDiv = document.getElementById('resultado-armadura-laje');
+            resultadoDiv.classList.add('hidden');
+
+            if (isNaN(h) || h <= 0 || isNaN(fck) || fck <= 0 || isNaN(fyk) || fyk <= 0) {
+                resultadoDiv.innerHTML = `<span class="text-red-600">Por favor, preencha os dados do material e a altura da laje com valores válidos.</span>`;
+                resultadoDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Cálculo da área de aço mínima (As,min) em cm²/m
+            // Assumindo uma seção de 100cm de largura (1 metro)
+            const b = 100;
+            let asMin = 0;
+            if (fck <= 50) { // Fórmulas simplificadas para classes de concreto comuns
+                 asMin = 0.15 * b * h / 100; // 0.15% da área da seção
+            } else {
+                asMin = 0.15 * b * h / 100; // Apenas para manter a compatibilidade
+            }
+            
+            resultadoDiv.innerHTML = `
+                <p>Área de aço mínima (As,min): <span class="text-blue-700">${asMin.toFixed(2)} cm²/m</span></p>
+                <p>Nota: Este valor é uma estimativa de pré-dimensionamento, com base na área da seção. O cálculo final deve ser feito considerando os esforços de flexão.</p>
+            `;
+            resultadoDiv.classList.remove('hidden');
+        }
+
+        // Função para calcular a armadura da viga
+        function calcularArmaduraViga() {
+            const bw = parseFloat(document.getElementById('b-viga-armadura').value);
+            const h = parseFloat(document.getElementById('h-viga-armadura').value);
+            const fck = parseFloat(document.getElementById('fck').value);
+            const fyk = parseFloat(document.getElementById('fyk').value);
+            const resultadoDiv = document.getElementById('resultado-armadura-viga');
+            resultadoDiv.classList.add('hidden');
+
+            if (isNaN(bw) || bw <= 0 || isNaN(h) || h <= 0 || isNaN(fck) || fck <= 0 || isNaN(fyk) || fyk <= 0) {
+                resultadoDiv.innerHTML = `<span class="text-red-600">Por favor, preencha os dados do material e as dimensões da viga com valores válidos.</span>`;
+                resultadoDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Cálculo da área de aço mínima (As,min) e máxima (As,max) em cm²
+            const ac = bw * h;
+            const asMin = 0.15 * ac / 100; // 0.15% da área da seção
+            const asMax = 4 * ac / 100; // 4% da área da seção (limite superior)
+            
+            resultadoDiv.innerHTML = `
+                <p>Área de aço mínima (As,min): <span class="text-blue-700">${asMin.toFixed(2)} cm²</span></p>
+                <p>Área de aço máxima (As,max): <span class="text-blue-700">${asMax.toFixed(2)} cm²</span></p>
+                <p>Nota: Este cálculo de pré-dimensionamento é baseado em percentuais da área de concreto. O valor final deve ser calculado com base nos esforços solicitantes.</p>
+            `;
+            resultadoDiv.classList.remove('hidden');
+        }
+
+        // Função para calcular a armadura do pilar
+        function calcularArmaduraPilar() {
+            const ac = parseFloat(document.getElementById('ac-pilar-armadura').value);
+            const fck = parseFloat(document.getElementById('fck').value);
+            const fyk = parseFloat(document.getElementById('fyk').value);
+            const resultadoDiv = document.getElementById('resultado-armadura-pilar');
+            resultadoDiv.classList.add('hidden');
+
+            if (isNaN(ac) || ac <= 0 || isNaN(fck) || fck <= 0 || isNaN(fyk) || fyk <= 0) {
+                resultadoDiv.innerHTML = `<span class="text-red-600">Por favor, preencha os dados do material e a área do pilar com valores válidos.</span>`;
+                resultadoDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Cálculo da área de aço mínima (As,min) e máxima (As,max) para pilares
+            const asMin = 0.8 * ac / 100; // 0.8% da área da seção
+            const asMax = 4 * ac / 100; // 4% da área da seção (limite superior da NBR 6118)
+            
+            resultadoDiv.innerHTML = `
+                <p>Área de aço mínima (As,min): <span class="text-blue-700">${asMin.toFixed(2)} cm²</span></p>
+                <p>Área de aço máxima (As,max): <span class="text-blue-700">${asMax.toFixed(2)} cm²</span></p>
+            `;
+            resultadoDiv.classList.remove('hidden');
+        }
+
+    </script>
+
+</body>
+</html>
